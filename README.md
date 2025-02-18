@@ -43,3 +43,24 @@ After deployment, go to:
 Or run this command in **Azure CLI**:
 ```sh
 az network public-ip list --resource-group MyDello-RG --query "[].{VM: name, PublicIP: ipAddress}" --output table
+
+---
+
+# 🔐 **Security Recommendations**
+## ⚠️ **Change the Default SSH Password!**
+The template uses a **default password** (`Dello12345678!`), which **must be changed in production**.
+Update the password in the template under:
+```json
+"adminPassword": "<secure-password>"
+```
+✅ **It is highly recommended** to use **SSH key authentication** instead of passwords.
+
+---
+
+## 🔥 Restrict SSH Access
+Modify the **NSG rules** to allow SSH **only from specific IPs**:
+
+```json
+"sourceAddressPrefix": "<your-public-ip>"
+```
+✅ **Disable SSH after setup** to enhance security.
