@@ -43,7 +43,7 @@ After deployment, go to:
 Or run this command in **Azure CLI**:
 ```sh
 az network public-ip list --resource-group MyDello-RG --query "[].{VM: name, PublicIP: ipAddress}" --output table
-
+```
 ---
 
 # 🔐 **Security Recommendations**
