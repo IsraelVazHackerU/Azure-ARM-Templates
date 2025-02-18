@@ -47,7 +47,7 @@ az network public-ip list --resource-group MyDello-RG --query "[].{VM: name, Pub
 ---
 
 # 🔐 **Security Recommendations**
-## ⚠️ **Change the Default SSH Password!**
+### ⚠️ **Change the Default SSH Password!**
 The template uses a **default password** (`Dello12345678!`), which **must be changed in production**.
 Update the password in the template under:
 ```json
