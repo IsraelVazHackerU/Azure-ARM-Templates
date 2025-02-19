@@ -1,0 +1,194 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+        "author": "IT Team",
+        "description": "Deploys an Azure Load Balancer and updates VM NICs configuration",
+        "components": [
+            "Standard SKU Load Balancer",
+            "Backend Pool configuration",
+            "Health probe",
+            "Load balancing rules",
+            "NIC configuration updates"
+        ]
+    },
+    "parameters": {
+        "environment": {
+            "type": "string",
+            "allowedValues": ["Production", "Development", "Testing"],
+            "defaultValue": "Production",
+            "metadata": {
+                "description": "Environment name - should match existing environment"
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "westeurope",
+            "metadata": {
+                "description": "Location for the Load Balancer"
+            }
+        },
+        "removePublicIP": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Whether to remove public IPs from VM NICs"
+            }
+        }
+    },
+    "variables": {
+        "lbName": "[concat('MyDello-LB-', parameters('environment'))]",
+        "lbFrontendName": "MyDello-Frontend",
+        "lbBackendPoolName": "MyDello-Backend-Pool",
+        "lbProbeName": "MyDello-Health-Probe",
+        "lbRuleName": "MyDello-LB-Rule-HTTP",
+        "existingVMNIC1": "MyDello-NIC-Web-1",
+        "existingVMNIC2": "MyDello-NIC-Web-2",
+        "standardTags": {
+            "ENV": "[parameters('environment')]",
+            "Owner": "IT Team",
+            "Department": "Marketing",
+            "Backup Policy": "High"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/loadBalancers",
+            "apiVersion": "2021-03-01",
+            "name": "[variables('lbName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('lbFrontendName')]",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('MyDello-PublicIP-LB'))]"
+                            }
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('lbBackendPoolName')]"
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('lbProbeName')]",
+                        "properties": {
+                            "protocol": "Http",
+                            "port": 80,
+                            "requestPath": "/",
+                            "intervalInSeconds": 15,
+                            "numberOfProbes": 2
+                        }
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "[variables('lbRuleName')]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', variables('lbName'), variables('lbFrontendName'))]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+                            },
+                            "probe": {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', variables('lbName'), variables('lbProbeName'))]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 4
+                        }
+                    }
+                ]
+            },
+            "tags": "[variables('standardTags')]"
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2021-03-01",
+            "name": "MyDello-PublicIP-LB",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4"
+            },
+            "tags": "[variables('standardTags')]"
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2021-03-01",
+            "name": "[variables('existingVMNIC1')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/loadBalancers', variables('lbName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', concat('MyDello-VNet-', parameters('environment')), 'WebSubnet')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": "[if(parameters('removePublicIP'), json('null'), reference(resourceId('Microsoft.Network/publicIPAddresses', 'MyDello-PublicIP-Web-1')))]",
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "tags": "[variables('standardTags')]"
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2021-03-01",
+            "name": "[variables('existingVMNIC2')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/loadBalancers', variables('lbName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', concat('MyDello-VNet-', parameters('environment')), 'WebSubnet')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": "[if(parameters('removePublicIP'), json('null'), reference(resourceId('Microsoft.Network/publicIPAddresses', 'MyDello-PublicIP-Web-2')))]",
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "tags": "[variables('standardTags')]"
+        }
+    ],
+    "outputs": {
+        "loadBalancerIP": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', 'MyDello-PublicIP-LB')).ipAddress]"
+        }
+    }
+}
