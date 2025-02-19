@@ -1,66 +1,150 @@
-# MyDello Azure Infrastructure Deployment
+# Azure Web Infrastructure Deployment
 
-## 📌 Overview
-This **Azure Resource Manager (ARM) template** automates the deployment of **networking and virtual machines (VMs) for MyDello**.
+This repository contains an Azure Resource Manager (ARM) template that deploys a complete web application infrastructure with high availability features.
 
-### **🔹 What This Template Does**
-- **Creates a Virtual Network (`MyDello-VNet-1`)** with two subnets (`Subnet1` & `Subnet2`).
-- **Deploys a Network Security Group (`MyDello-NSG-Subnet`)** to secure the VMs.
-- **Assigns Static Public IPs** for the VMs.
-- **Creates two Ubuntu 24.04 LTS VMs (`MyDello-VM-Web-1` and `MyDello-VM-Web-2`)**.
-- **Configures Network Rules** to allow:
-  - **HTTP traffic (Port 80)** for web access.
-  - **SSH access (Port 22)** for administration.
+## 🏗️ Infrastructure Components
 
----
+- Virtual Network with two subnets (Web and Data)
+- Two Ubuntu 24.04 LTS web servers in an availability set
+- Network Security Group with HTTP and SSH rules
+- Standard SKU Public IPs with static allocation
+- Network interfaces with security group associations
 
-## 🚀 **How to Deploy via Azure Portal**
-### **1️⃣ Recommended Region**
-- The **recommended region** for deployment is:  
-  ✅ **`North Europe`** (for best availability and performance).  
-- However, **you can use any other region** if preferred.
+## 📋 Prerequisites
 
-### **2️⃣ Deployment Steps**
-1️⃣ **Sign in to the [Azure Portal](https://portal.azure.com/)**.  
-2️⃣ **Go to the "Deploy a Custom Template" page**:  
-   - Click **Create a resource** → **Search "Template Deployment"** → Select **Deploy a custom template**.  
-3️⃣ **Click "Build your own template in the editor"**.  
-4️⃣ **Copy and paste the contents of `combined-deploy.json`** into the template editor.  
-5️⃣ **Click "Save"**.  
-6️⃣ **Enter the Resource Group Name** → **Use `MyDello-RG` (Recommended)**.  
-7️⃣ **Set the Region**:
-   - **Recommended**: `North Europe`
-   - **Optional**: Choose another region if needed.
-8️⃣ **Click "Review + Create"** → Then **"Create"** to start deployment.
+- Azure subscription
+- Resource group created
+- Contributor access to the resource group
+- Azure CLI, PowerShell, or Azure Portal access
 
----
+## 🚀 Deployment Methods
 
-## 🔗 **Accessing the VMs**
-### **1️⃣ Find the Public IPs**
-After deployment, go to:  
-📍 **Azure Portal** → **Resource Group (`MyDello-RG`)** → **Public IP Addresses**.  
+### 1. Azure Portal
 
-Or run this command in **Azure CLI**:
-```sh
-az network public-ip list --resource-group MyDello-RG --query "[].{VM: name, PublicIP: ipAddress}" --output table
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/<YOUR_TEMPLATE_URL>)
+
+1. Click the "Deploy to Azure" button above
+2. Fill in the required parameters:
+   - Select/create resource group
+   - Choose environment (Production/Development/Testing)
+   - Enter admin username
+   - Enter admin password
+   - Select region (default: West Europe)
+   - Adjust VM size if needed (default: Standard_B1s)
+3. Click "Review + Create"
+4. Once validation passes, click "Create"
+
+### 2. Azure CLI
+
+```bash
+# Login to Azure
+az login
+
+# Set subscription
+az account set --subscription <subscription-id>
+
+# Create resource group (if not exists)
+az group create --name <resource-group-name> --location westeurope
+
+# Deploy template
+az deployment group create \
+  --name MyDelloWebApp \
+  --resource-group <resource-group-name> \
+  --template-file template.json \
+  --parameters environment=Production \
+              adminUsername=<username> \
+              adminPasswordOrKey=<password>
 ```
----
 
-# 🔐 **Security Recommendations**
-### ⚠️ **Change the Default SSH Password!**
-The template uses a **default password** (`Dello12345678!`), which **must be changed in production**.
-Update the password in the template under:
-```json
-"adminPassword": "<secure-password>"
+### 3. PowerShell
+
+```powershell
+# Login to Azure
+Connect-AzAccount
+
+# Select subscription
+Select-AzSubscription -SubscriptionId <subscription-id>
+
+# Create resource group (if not exists)
+New-AzResourceGroup -Name <resource-group-name> -Location "westeurope"
+
+# Deploy template
+New-AzResourceGroupDeployment `
+  -Name MyDelloWebApp `
+  -ResourceGroupName <resource-group-name> `
+  -TemplateFile template.json `
+  -environment Production `
+  -adminUsername <username> `
+  -adminPasswordOrKey <password>
 ```
-✅ **It is highly recommended** to use **SSH key authentication** instead of passwords.
 
----
+## ⚙️ Parameter Details
 
-## 🔥 Restrict SSH Access
-Modify the **NSG rules** to allow SSH **only from specific IPs**:
+| Parameter Name | Type | Default Value | Description |
+|---------------|------|---------------|-------------|
+| environment | string | Production | Deployment environment type |
+| location | string | westeurope | Azure region for deployment |
+| vmSize | string | Standard_B1s | VM size |
+| adminUsername | string | - | Admin username for VMs |
+| adminPasswordOrKey | securestring | - | Admin password for VMs |
 
-```json
-"sourceAddressPrefix": "<your-public-ip>"
-```
-✅ **Disable SSH after setup** to enhance security.
+## 🔒 Network Configuration
+
+- VNet Address Space: 10.1.0.0/16
+- WebSubnet: 10.1.1.0/24
+- DataSubnet: 10.1.2.0/24
+
+## 🛡️ Security Features
+
+- Network Security Group rules:
+  - Inbound HTTP (port 80) access
+  - Inbound SSH (port 22) access
+  - Deny all other inbound traffic
+- Standard SKU Public IPs
+- All resources are tagged for governance
+
+## 🔄 High Availability
+
+- VMs deployed in availability set
+- 2 Platform fault domains
+- 5 Platform update domains
+
+## 📝 Post-Deployment Steps
+
+1. Verify resource deployment
+2. Test VM connectivity
+3. Configure web server software
+4. Update NSG rules if needed
+5. Set up monitoring
+
+## 🏷️ Resource Naming
+
+- VNet: MyDello-VNet-{environment}
+- NSG: MyDello-NSG-{environment}
+- VMs: MyDello-VM-Web-[1,2]
+- Public IPs: MyDello-PublicIP-Web-[1,2]
+- NICs: MyDello-NIC-Web-[1,2]
+- Availability Set: MyDello-AvSet-Web
+
+## 🔖 Resource Tags
+
+- ENV: Production/Development/Testing
+- Owner: IT Team
+- Department: Marketing
+- Backup Policy: High
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 💬 Support
+
+For issues and feature requests, please create an issue in this repository.
