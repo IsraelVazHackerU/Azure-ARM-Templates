@@ -3,10 +3,28 @@
   "contentVersion": "1.0.0.0",
   "resources": [
     {
+      "type": "Microsoft.Compute/availabilitySets",
+      "apiVersion": "2021-03-01",
+      "name": "MyDello-AVSet",
+      "location": "westeurope",
+      "properties": {
+        "platformUpdateDomainCount": 2,
+        "platformFaultDomainCount": 2
+      },
+      "tags": {
+        "ENV": "Production",
+        "Owner": "IT Team",
+        "Department": "Marketing"
+      }
+    },
+    {
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2021-03-01",
       "name": "MyDello-PublicIP-LB",
       "location": "westeurope",
+      "sku": {
+        "name": "Standard"
+      },
       "properties": {
         "publicIPAllocationMethod": "Static"
       },
@@ -21,6 +39,9 @@
       "apiVersion": "2021-03-01",
       "name": "MyDello-LB",
       "location": "westeurope",
+      "sku": {
+        "name": "Standard"
+      },
       "properties": {
         "frontendIPConfigurations": [
           {
@@ -77,6 +98,50 @@
         "Owner": "IT Team",
         "Department": "Marketing"
       }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2021-03-01",
+      "name": "MyDello-NIC-Web-1",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'MyDello-LB', 'MyDello-BackendPool')]"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', 'MyDello-LB')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2021-03-01",
+      "name": "MyDello-NIC-Web-2",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'MyDello-LB', 'MyDello-BackendPool')]"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', 'MyDello-LB')]"
+      ]
     }
   ]
 }
