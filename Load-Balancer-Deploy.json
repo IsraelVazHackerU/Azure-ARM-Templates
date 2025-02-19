@@ -109,6 +109,9 @@
           {
             "name": "ipconfig1",
             "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'MyDello-VNet-1', 'Subnet1')]"
+              },
               "loadBalancerBackendAddressPools": [
                 {
                   "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'MyDello-LB', 'MyDello-BackendPool')]"
@@ -132,6 +135,9 @@
           {
             "name": "ipconfig1",
             "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'MyDello-VNet-1', 'Subnet1')]"
+              },
               "loadBalancerBackendAddressPools": [
                 {
                   "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'MyDello-LB', 'MyDello-BackendPool')]"
